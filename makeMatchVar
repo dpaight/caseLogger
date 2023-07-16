@@ -1,0 +1,16 @@
+function makeMatchVar(data) {
+    if (data === void 0) {
+        data = ["Paight", "Daniel", "1/21/2013"];
+    }
+    function daysIntoYear(date) {
+        return ((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) -
+            Date.UTC(date.getFullYear(), 0, 0)) /
+            24 /
+            60 /
+            60 /
+            1000);
+    }
+    var y2 = new Date(data[2]).getFullYear().toString().slice(2);
+    var doy = daysIntoYear(new Date(data[2]));
+    return (data[0] + data[1] + y2 + doy).toString().replace(/[^A-z0-9]/g, "");
+}

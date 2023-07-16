@@ -1,0 +1,11 @@
+Next Tri / Initial formula
+    =IF(isblank(iferror(DATE(mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 11, 0),7,4), mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 11, 0),1,2),mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 11, 0),4,2))))
+
+        , if(and(not(isblank(F2)), not(isblank(A2))),F2 + 60, IF(isblank(A2), "", "NA"))
+    
+        , DATE(mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 11, 0),7,4), mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 11, 0),1,2),mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 11, 0),4,2)))
+
+    
+Next Annual
+    =DATE(mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 9, 0),7,4), mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 9, 0),1,2),mid(VLOOKUP($A2, roster_seis!$A$1:$Z, 9, 0),4,2))
+
