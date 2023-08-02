@@ -1,4 +1,6 @@
 // Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
+// Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
+// Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
 var ss = SpreadsheetApp.getActiveSpreadsheet();
 // @ts-ignore
 var moment = Moment.load();
@@ -88,7 +90,7 @@ class Goal {
         "<li data-saved='" + this.snip() + "'>" + this["area"] + "</li>";
     }
 }
-function onLoad() {
+function onOpen() {
     SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
         .createMenu('Functions')
         .addItem('Open sidebar', 'openSidebar')
@@ -630,13 +632,9 @@ function setUpAttendance() {
     var sheet, range, values, theDates, theDays;
     var offSet = 0;
 
-    var todayWkDy = (moment().weekday() === 0 || moment().weekday() === 6) ?
-        moment().weekday(-5) :
-        moment().weekday();
-
-    var todayDt = (moment().weekday() === 0 || moment().weekday() === 6) ?
-        moment().subtract(2, 'd').format('MM-DD-YYYY') :
-        moment().format('MM-DD-YYYY');
+    var today = (moment().weekday() === 0 || moment().weekday() === 6) ? 
+    moment().subtract(1, 'd').weekday(5).format('MM-DD-YYYY') :
+    moment().weekday();
 
     sheet = ss.getSheetByName("attnd");
     range = sheet.getDataRange();
@@ -649,9 +647,9 @@ function setUpAttendance() {
     values.shift();
 
     // highlight the current day
-    var hiliteRange = sheet.getRange(1, dateRow.indexOf(todayDt) + 1, 30, 1);
-    hiliteRange.setBackground('#fff2cc');
-    var lastMonday = moment(todayDt, "MM-DD-YYYY").subtract(7, 'd').weekday(1).format("MM-DD-YYYY");
+    var hiliteRange = sheet.getRange(1, dateRow.indexOf(today) + 1, 30, 1);
+    hiliteRange.setBackground('#ffe599');
+    var lastMonday = moment(today, "MM-DD-YYYY").subtract(7, 'd').weekday(1).format("MM-DD-YYYY");
     var lstMonCol = dateRow.indexOf(lastMonday) + 1;
     var dayOne = dateRow.indexOf("startOfDates") + 1;
 
@@ -667,42 +665,39 @@ function setUpAttendance() {
 
     var dateGrp = grpRng.shiftColumnGroupDepth(1);
     dateGrp.collapseGroups();
-    sheet.getRange(3, dateRow.indexOf(todayDt) + 1, 1, 1).activate();
+    sheet.getRange(3, dateRow.indexOf(today) + 1, 1, 1).activate();
+
+
 }
+function countPotentialDaysInRange(input) { // = [[true, true, false, true, true]]
 
+    Logger.log('input is %s', JSON.stringify(input));
+    var sheet = ss.getSheetByName('attndSmry');
+    var rangeBounds = sheet.getRange('C1:C2').getDisplayValues();
+    var begEnd = rangeBounds.map(function (value, index) {
+        return moment(value[0], 'MM-DD-YYYY').format('MM-DD-YYYY')
+    });
+    var count = 0;
 
-function countAttendance(arrayHere, arrayAssigned, datesRange) {
-    if (ss.getActiveSheet().getName() !== 'attndSmry') {return};
-    
-    var sheet, rangeHere, attended, assigned, rangeAssigned, datesRangeValues, countDay = 0, countHere = 0;
-    sheet = ss.getSheetByName('attnd');
-    Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
+    var thisDay = moment(begEnd[0], 'MM-DD-YYYY').format('MM-DD-YYYY');
+    var endDay = moment(begEnd[1], 'MM-DD-YYYY').format('MM-DD-YYYY');
 
-    arrayHere = arrayHere.shift();
-    arrayAssigned = arrayAssigned.shift();
-    datesRange = datesRange.shift();
-    Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
-
-    for (let i = 0; i < datesRange.length; i++) {
-        const a = moment(datesRange[i], 'MM-DD-YYYY').weekday();
-        Logger.log('the date is %s\n day of the week is %s', datesRange[i], a);
-        if (arrayAssigned[a - 1] === true && (arrayHere[i] >= 0 || arrayHere[i] === "")) {
-            countDay++;
+    var dateList = ss.getSheetByName('attnd').getRange(1, 1, 1, 298).getDisplayValues().flat();
+    var beginDateIndex = dateList.indexOf(rangeBounds[0][0].toString());
+    var endDateIndex = dateList.indexOf(rangeBounds[1][0].toString());
+    var subList = ss.getSheetByName('attnd').getRange(1, beginDateIndex, 1, endDateIndex - beginDateIndex).getDisplayValues().flat();
+    for (let i = 0; i < subList.length; i++) {
+        const el = dateList[i];
+        var thisDayWkDy = moment(el, 'MM-DD-YYYY').weekday();
+        Logger.log('for the date %s, the weekday is %s', thisDay, thisDayWkDy);
+        if (input[0][thisDayWkDy - 1] === true) {
+            count++;
         }
-        Logger.log('the value of arrayAssigned is %s', JSON.stringify(arrayAssigned));
-        if (a === 1 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 2 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 3 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 4 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 5 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        }
+
     }
-    return [[countDay, countHere]]
+
+    Logger.log('count is %s', count);
+    return count;
 }
 
 //# sourceMappingURL=module.js.map
