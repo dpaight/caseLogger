@@ -702,7 +702,7 @@ function countAttendance(arrayHere, arrayAssigned, datesRange) {
             countHere++;
         }
     }
-    return [[countDay, countHere]]
+    return [[countDay, countHere]];
 }
 
 //# sourceMappingURL=module.js.map
