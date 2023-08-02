@@ -1,6 +1,4 @@
 // Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
-// Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
-// Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
 var ss = SpreadsheetApp.getActiveSpreadsheet();
 // @ts-ignore
 var moment = Moment.load();
@@ -90,7 +88,7 @@ class Goal {
         "<li data-saved='" + this.snip() + "'>" + this["area"] + "</li>";
     }
 }
-function onOpen() {
+function onLoad() {
     SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
         .createMenu('Functions')
         .addItem('Open sidebar', 'openSidebar')
@@ -142,9 +140,6 @@ function checkFolderIdProperties() {
         Logger.log('excelSource already set to %s', scriptProp.getProperty('csvSource'));
     }
 
-}
-function include(filename) {
-    return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 function openSidebar(seisId) {
@@ -616,8 +611,8 @@ function checkUncheckAll() {
     var last = sheet.getRange(1, 1, 50, 1).getValues().filter(String).length;
     var range = sheet.getRange(2, headings.indexOf("Select") + 1, last - 1, 1);
     var values = range.getValues().flat();
-    if (values[0] === true) { 
-    
+    if (values[0] === true) {
+
         var newVal = false;
     } else {
         newVal = true;
@@ -629,48 +624,85 @@ function checkUncheckAll() {
     range.setValues(newValues);
 }
 function setUpAttendance() {
+    // go to the place in the spreadsheet where you are going to record attendance for today. 
+    // also include a week before
 
     var sheet, range, values, theDates, theDays;
     var offSet = 0;
+
+    var todayWkDy = (moment().weekday() === 0 || moment().weekday() === 6) ?
+        moment().weekday(-5) :
+        moment().weekday();
+
+    var todayDt = (moment().weekday() === 0 || moment().weekday() === 6) ?
+        moment().subtract(2, 'd').format('MM-DD-YYYY') :
+        moment().format('MM-DD-YYYY');
+
     sheet = ss.getSheetByName("attnd");
     range = sheet.getDataRange();
+    // reset all cells to white background
+    range.setBackground('#ffffff');
     values = range.getDisplayValues();
-    var headings = values.shift();
-    var todayCell = moment(sheet.getRange("P1"));
-    var today = moment(todayCell, 'yyyy-MM-DDTHH:mm:ss').format('MM-DD-YYYY');
-    // var today = moment().format("MM-DD-YYYY");
+    // everything is a string (dates, too)
+    var dateRow = values.shift();
+    // throw away row 2
+    values.shift();
 
-    if (headings.indexOf(today) === -1) {
-        today = moment().day(0);
+    // highlight the current day
+    var hiliteRange = sheet.getRange(1, dateRow.indexOf(todayDt) + 1, 30, 1);
+    hiliteRange.setBackground('#fff2cc');
+    var lastMonday = moment(todayDt, "MM-DD-YYYY").subtract(7, 'd').weekday(1).format("MM-DD-YYYY");
+    var lstMonCol = dateRow.indexOf(lastMonday) + 1;
+    var dayOne = dateRow.indexOf("startOfDates") + 1;
+
+
+    var colGroups = sheet.getColumnGroup(dayOne, 1);
+    try {
+        colGroups.remove();
+    } catch (error) {
+        Logger.log('failed to remove column group(s): %s', error);
     }
-    var col = headings.indexOf(moment(today).format('MM-DD-YYYY'));
-    Logger.log('col is %s, and ', col);
-    var cell = sheet.getRange(3, col, 1, 1);
-    cell.activate();
-    range = sheet.getRange(3, 9, 50, 180);
-    range.setBackground("#ffffff");
-    range = sheet.getRange(3, col + 1, 50, 1);
-    range.setBackground("#ffe599");
-    Logger.log('%s', moment().day());
-    var grpRng = sheet.getRange(1, 13, 30, (col - (11 + (moment().day()))));
-    sheet.getColumnGroup(13, 1).remove();
+
+    var grpRng = sheet.getRange(1, dayOne, 50, lstMonCol - dayOne);
 
     var dateGrp = grpRng.shiftColumnGroupDepth(1);
     dateGrp.collapseGroups();
-
+    sheet.getRange(3, dateRow.indexOf(todayDt) + 1, 1, 1).activate();
 }
-function countDaysInString(inputString) {
-    Logger.log(inputString);
-    var count = 0;
-    var days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-    for (let i = 0; i < days.length; i++) {
-        const element = days[i];
-        var searchString = new RegExp(element, "ig");
-        if (inputString.toString().search(searchString) !== -1) {
-            count++;
+
+
+function countAttendance(arrayHere, arrayAssigned, datesRange) {
+    if (ss.getActiveSheet().getName() !== 'attndSmry') {return};
+    
+    var sheet, rangeHere, attended, assigned, rangeAssigned, datesRangeValues, countDay = 0, countHere = 0;
+    sheet = ss.getSheetByName('attnd');
+    Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
+
+    arrayHere = arrayHere.shift();
+    arrayAssigned = arrayAssigned.shift();
+    datesRange = datesRange.shift();
+    Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
+
+    for (let i = 0; i < datesRange.length; i++) {
+        const a = moment(datesRange[i], 'MM-DD-YYYY').weekday();
+        Logger.log('the date is %s\n day of the week is %s', datesRange[i], a);
+        if (arrayAssigned[a - 1] === true && (arrayHere[i] >= 0 || arrayHere[i] === "")) {
+            countDay++;
+        }
+        Logger.log('the value of arrayAssigned is %s', JSON.stringify(arrayAssigned));
+        if (a === 1 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+            countHere++;
+        } else if (a === 2 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+            countHere++;
+        } else if (a === 3 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+            countHere++;
+        } else if (a === 4 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+            countHere++;
+        } else if (a === 5 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+            countHere++;
         }
     }
-    return count;
+    return [[countDay, countHere]]
 }
-// test
+
 //# sourceMappingURL=module.js.map
