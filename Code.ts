@@ -627,7 +627,8 @@ function setUpAttendance() {
     // go to the place in the spreadsheet where you are going to record attendance for today. 
     // also include a week before
 
-    var sheet, range, values, theDates, theDays;
+    var sheet, range, values, theDates, theDays, removed;
+
     var offSet = 0;
 
     var todayWkDy = (moment().weekday() === 0 || moment().weekday() === 6) ?
@@ -645,12 +646,28 @@ function setUpAttendance() {
     values = range.getDisplayValues();
     // everything is a string (dates, too)
     var dateRow = values.shift();
-    // throw away row 2
-    values.shift();
-
+    removed = 1;
+    // throw away more until the id field has seven digits
+    while (values[0][1].toString().search(/\d{6}/) === -1) {
+        values.shift();
+        removed++;
+    }
+    // values should now be on the first student record
     // highlight the current day
-    var hiliteRange = sheet.getRange(1, dateRow.indexOf(todayDt) + 1, 30, 1);
-    hiliteRange.setBackground('#fff2cc');
+    var hiliteCol = dateRow.indexOf(todayDt) + 1;
+    for (let i = 0; i < 28; i++) {
+        var hiliteCell = sheet.getRange(i + removed + 1, hiliteCol, 1, 1);
+        var assgnDays = sheet.getRange(i + removed + 1, 10, 1, 5).getValues().flat();
+        hiliteCell.setBackground('#888888');
+        // SpreadsheetApp.flush();
+
+        if (assgnDays[todayWkDy - 1] === true) {
+            hiliteCell.setBackground('#fff2cc');
+            // SpreadsheetApp.flush();
+        }
+    }
+
+    // hiliteRange.setBackground('#fff2cc');
     var lastMonday = moment(todayDt, "MM-DD-YYYY").subtract(7, 'd').weekday(1).format("MM-DD-YYYY");
     var lstMonCol = dateRow.indexOf(lastMonday) + 1;
     var dayOne = dateRow.indexOf("startOfDates") + 1;
@@ -672,8 +689,8 @@ function setUpAttendance() {
 
 
 function countAttendance(arrayHere, arrayAssigned, datesRange) {
-    if (ss.getActiveSheet().getName() !== 'attndSmry') {return};
-    
+    if (ss.getActiveSheet().getName() !== 'attndSmry') { return };
+
     var sheet, rangeHere, attended, assigned, rangeAssigned, datesRangeValues, countDay = 0, countHere = 0;
     sheet = ss.getSheetByName('attnd');
     Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
