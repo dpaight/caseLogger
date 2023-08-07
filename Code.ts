@@ -658,12 +658,11 @@ function setUpAttendance() {
     for (let i = 0; i < 28; i++) {
         var hiliteCell = sheet.getRange(i + removed + 1, hiliteCol, 1, 1);
         var assgnDays = sheet.getRange(i + removed + 1, 10, 1, 5).getValues().flat();
-        hiliteCell.setBackground('#888888');
-        // SpreadsheetApp.flush();
 
         if (assgnDays[todayWkDy - 1] === true) {
             hiliteCell.setBackground('#fff2cc');
-            // SpreadsheetApp.flush();
+        } else {
+            hiliteCell.setBackground('#888888');
         }
     }
 
@@ -673,8 +672,8 @@ function setUpAttendance() {
     var dayOne = dateRow.indexOf("startOfDates") + 1;
 
 
-    var colGroups = sheet.getColumnGroup(dayOne, 1);
     try {
+        var colGroups = sheet.getColumnGroup(dayOne, 1);
         colGroups.remove();
     } catch (error) {
         Logger.log('failed to remove column group(s): %s', error);
@@ -688,38 +687,69 @@ function setUpAttendance() {
 }
 
 
-function countAttendance(arrayHere, arrayAssigned, datesRange) {
-    if (ss.getActiveSheet().getName() !== 'attndSmry') { return };
+// function countAttendance(arrayHere, arrayAssigned, datesRange) {
+//     if (ss.getActiveSheet().getName() !== 'attndSmry') { return };
 
-    var sheet, rangeHere, attended, assigned, rangeAssigned, datesRangeValues, countDay = 0, countHere = 0;
-    sheet = ss.getSheetByName('attnd');
-    Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
+//     var sheet, countDay = 0, countHere = 0, countAbsent = 0, countCanceled = 0, countHoliday = 0;
+//     sheet = ss.getSheetByName('attnd');
+//     Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
 
-    arrayHere = arrayHere.shift();
-    arrayAssigned = arrayAssigned.shift();
-    datesRange = datesRange.shift();
-    Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
+//     arrayHere = arrayHere.shift();
+//     arrayAssigned = arrayAssigned.shift();
+//     datesRange = datesRange.shift();
+//     Logger.log('aryHere, datesRange, and aryAssgnd are \n%s, \n%s and \n%s', JSON.stringify(arrayHere), JSON.stringify(datesRange), JSON.stringify(arrayAssigned));
 
-    for (let i = 0; i < datesRange.length; i++) {
-        const a = moment(datesRange[i], 'MM-DD-YYYY').weekday();
-        Logger.log('the date is %s\n day of the week is %s', datesRange[i], a);
-        if (arrayAssigned[a - 1] === true && (arrayHere[i] >= 0 || arrayHere[i] === "")) {
-            countDay++;
-        }
-        Logger.log('the value of arrayAssigned is %s', JSON.stringify(arrayAssigned));
-        if (a === 1 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 2 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 3 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 4 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        } else if (a === 5 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
-            countHere++;
-        }
-    }
-    return [[countDay, countHere]];
-}
-
+//     for (let i = 0; i < datesRange.length; i++) {
+//         const a = moment(datesRange[i], 'MM-DD-YYYY').weekday();
+//         Logger.log('the date is %s\n day of the week is %s', datesRange[i], a);
+//         // was it a holiday?
+//         if (a === 1 && arrayAssigned[a - 1] === true && arrayHere[i] === -2) {
+//             countHoliday++;
+//         } else if (a === 2 && arrayAssigned[a - 1] === true && arrayHere[i] === -2) {
+//             countHoliday++;
+//         } else if (a === 3 && arrayAssigned[a - 1] === true && arrayHere[i] === -2) {
+//             countHoliday++;
+//         } else if (a === 4 && arrayAssigned[a - 1] === true && arrayHere[i] === -2) {
+//             countHoliday++;
+//         } else if (a === 5 && arrayAssigned[a - 1] === true && arrayHere[i] === -2) {
+//             countHoliday++;
+//             // was the session canceled?
+//         } else if (a === 1 && arrayAssigned[a - 1] === true && arrayHere[i] === -1) {
+//             countDay++;
+//             countCanceled++;
+//         } else if (a === 2 && arrayAssigned[a - 1] === true && arrayHere[i] === -1) {
+//             countDay++;
+//             countCanceled++;
+//         } else if (a === 3 && arrayAssigned[a - 1] === true && arrayHere[i] === -1) {
+//             countDay++;
+//             countCanceled++;
+//         } else if (a === 4 && arrayAssigned[a - 1] === true && arrayHere[i] === -1) {
+//             countDay++;
+//             countCanceled++;
+//         } else if (a === 5 && arrayAssigned[a - 1] === true && arrayHere[i] === -1) {
+//             countDay++;
+//             countCanceled++;
+//             // did student attend?
+//         } else if (a === 1 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+//             countHere++;
+//             countDay++;
+//         } else if (a === 2 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+//             countDay++;
+//             countHere++;
+//         } else if (a === 3 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+//             countDay++;
+//             countHere++;
+//         } else if (a === 4 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+//             countDay++;
+//             countHere++;
+//         } else if (a === 5 && arrayAssigned[a - 1] === true && arrayHere[i] === 1) {
+//             countHere++;
+//             countDay++;
+//             // now count canceled days
+//         } else {
+//             countAbsent++;
+//         }
+//         return [[countDay, countHere, countAbsent, countCanceled, countHoliday]];
+//     }
+// }
 //# sourceMappingURL=module.js.map
