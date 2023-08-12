@@ -582,7 +582,9 @@ function getSeisContactInfo() {
                 }
             }
         }
-        contactData.push(row);
+        if(row.length === 9) {
+            contactData.push(row);
+        }
         row = [];
     }
     var dest = ss.getSheetByName('contactInfo');
@@ -656,7 +658,7 @@ function setUpAttendance() {
     // highlight the current day
     var hiliteCol = dateRow.indexOf(todayDt) + 1;
 
-    var theColorRange = ss.getSheetByName("attnd").getRange(1 + removed + 1, hiliteCol, 28, 1);
+    var theColorRange = ss.getSheetByName("attnd").getRange(1 + removed, hiliteCol, 28, 1);
     var theColors = theColorRange.getBackgrounds();
     Logger.log('the colors are %s', JSON.stringify(theColors));
 
@@ -694,5 +696,45 @@ function setUpAttendance() {
     sheet.getRange(3, dateRow.indexOf(todayDt) + 1, 1, 1).activate();
 }
 
+function insertCodesForHolidays() {
+    var sheet, range, dest, allDatesVals, holidayVals;
+    // var attndData = ss.getSheetByName('attnd').getRange(5, 25, 28, 230);
+    // var attndDataVals = attndData.getValues();
+    // for (let z = 0; z < attndDataVals.length; z++) {
+    //     const el = attndDataVals[z];
+        
+    // }
+    sheet = ss.getSheetByName('codes_lists');
 
+    range = ss.getRangeByName('holidays');
+    holidayVals = range.getDisplayValues().flat();
+
+    range = ss.getRangeByName('allDates');
+    allDatesVals = range.getDisplayValues().flat();
+
+    Logger.log('holidays is %s; \nalldates is %s', JSON.stringify(holidayVals), JSON.stringify(allDatesVals));
+
+    for (var i = 0; i < holidayVals.length; i++) {
+        const el = holidayVals[i];
+        var colStart = allDatesVals.indexOf(el) + 1;
+        var numCols = 1;
+        while (holidayVals[i + 1] === moment(holidayVals[i], "MM-DD-YYYY").add(1, 'd').format("MM-DD-YYYY")) {
+            numCols++;
+            i++;
+        }
+        // i--;
+        var fill = [];
+        var row = [];
+        for (var f = 0; f < 20; f++) {
+            for (let g = 0; g < numCols; g++) {
+                row.push(-2);
+            }
+            fill.push(row);
+            row = [];
+        }
+        dest = ss.getSheetByName('attnd').getRange(5, colStart, fill.length, fill[0].length);
+        dest.setValues(fill);
+        SpreadsheetApp.flush();
+    }
+}
 //# sourceMappingURL=module.js.map
