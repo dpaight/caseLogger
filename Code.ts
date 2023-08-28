@@ -1,4 +1,5 @@
 // Compiled using caselogger 1.0.0 (TypeScript 4.9.5)
+// named version of spreadsheet is 'working_2023-08-27_b'
 var ss = SpreadsheetApp.getActiveSpreadsheet();
 // @ts-ignore
 var moment = Moment.load();
@@ -312,7 +313,7 @@ function sortStuDataRangeByCurrentColumn() {
     var cell = sheet.getCurrentCell();
     var col = cell.getColumn() - 1;
     // Logger.log('the sort column is %s', col);
-    var data = ss.getRangeByName('stuDataChecklist').getValues();
+    var data = ss.getRangeByName('stuDataChecklistWoHeadings').getValues();
     var preSortedIds = getFlatIds(data);
     var records = preSortedIds.length;
 
@@ -338,7 +339,7 @@ function sortStuDataRangeByCurrentColumn() {
             const el = preSortedIds[i];
             if (postSortedIds.indexOf(el) !== i) {
                 // the two lists were different; use the ascending sort
-                var range = ss.getRangeByName('stuDataChecklist');
+                var range = ss.getRangeByName('stuDataChecklistWoHeadings');
                 range.sort({ column: col + 1, ascending: true });
                 break;
             }
@@ -424,8 +425,8 @@ function importXLS_2() {
     var headersAndFormulas = [
         [
             '=ArrayFormula(iferror(vlookup($M1:$M, teacherCodes!A1:E, 5,false))',
-            '=ArrayFormula(iferror(vlookup($M1:$M,{teacherCodes!$B$1:$I34 }, 8,false),if(row($M$1:$M) = 1,"teachName","")))	',
-            '=ArrayFormula(if(row($Z$1:$Z) <> 1, if(isBlank($A$1:$A),,if(($M$1:$M = 21) + ($M$1:$M = 100) + ($M$1:$M = 105) + sum($S$1:$S = "X") > 0, 1, 0)),"sdc||rsp"))	',
+            '=ArrayFormula(iferror(vlookup($M1:$M,{teacherCodes!$B$1:$I34 }, 8,false),if(row($M$1:$M) = 1,"teachName",""))), ',
+            '=ArrayFormula(if(row($Z$1:$Z) <> 1, if(isBlank($A$1:$A),,if(($M$1:$M = 21) + ($M$1:$M = 100) + ($M$1:$M = 105) + sum($S$1:$S = "X") > 0, 1, 0)),"sdc||rsp")), ',
             '=ArrayFormula(if(row(A1:A)=1,"nmjdob",regexreplace(if(isblank(A1:A),, REGEXREPLACE(C1:C & D1:D, "[ \'-]", "") & right(year(G1:G),2) & days("12/31/"&(year(G1:G)-1), G1:G)),"-","")))',
             '=ArrayFormula(if(isblank(id),, regexreplace(C1:C & "_" & firstName & "_" & A1:A, "[ \'-]", "")))',
             '=ArrayFormula(if(isblank(id),, REGEXREPLACE(C1:C & "_" & firstName & "_dob_" & dob, "[ \'-]", "")))',
@@ -582,7 +583,7 @@ function getSeisContactInfo() {
                 }
             }
         }
-        if(row.length === 9) {
+        if (row.length === 9) {
             contactData.push(row);
         }
         row = [];
@@ -694,6 +695,22 @@ function setUpAttendance() {
     var dateGrp = grpRng.shiftColumnGroupDepth(1);
     dateGrp.collapseGroups();
     sheet.getRange(3, dateRow.indexOf(todayDt) + 1, 1, 1).activate();
+
+    // an alternative is to filter out groups that do not meet today
+    try {
+        var filter = ss.getActiveSheet().getFilter();
+    } catch (error) {
+        filter = ss.getSheetByName('attnd').getRange("A1:KW32").createFilter();
+    }
+    var criteria = SpreadsheetApp.newFilterCriteria()
+        .setHiddenValues(['0', 'FALSE'])
+        .build();
+    if (filter !== null) {
+        filter.remove();
+    } else {
+    }
+    filter.setColumnFilterCriteria(16, criteria);
+    SpreadsheetApp.flush();
 }
 
 function insertCodesForHolidays() {
@@ -702,7 +719,7 @@ function insertCodesForHolidays() {
     // var attndDataVals = attndData.getValues();
     // for (let z = 0; z < attndDataVals.length; z++) {
     //     const el = attndDataVals[z];
-        
+
     // }
     sheet = ss.getSheetByName('codes_lists');
 
@@ -736,5 +753,58 @@ function insertCodesForHolidays() {
         dest.setValues(fill);
         SpreadsheetApp.flush();
     }
+}
+function makeSchedule() {
+    var sheet, range, values;
+    sheet = ss.getSheetByName('attnd');
+    range = sheet.getRange("A1:Q32");
+    values = range.getDisplayValues();
+
+
+    var events = [];
+    for (let i = 0; i < values.length; i++) {
+        const el = values[i];
+        var [name, seisId, Services_Codes, min_330, Freq, Grade, TeacherEM, Teacher, Group_ID, Mo, Tu, We, Th, Fr, , Begin, End] = el;
+        Begin = "2023-08-14T" + Begin + "00:000Z";
+        if (Mo === true) {
+            events.push([1, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+        }
+        if (Tu === true) {
+            events.push([2, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+        }
+        if (We === true) {
+            events.push([3, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+        }
+        if (Th === true) {
+            events.push([4, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+        }
+        if (Fr === true) {
+            events.push([5, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+        }
+    }
+
+    // by time
+    events.sort(
+        function (a, b) {
+            if (moment(a[1], "YYYY-MM-DDThh:mm:ss").isBefore(moment(b[1], "YYYY-MM-DDThh:mm:ss") === true)) {
+                return -1;
+            } else if (moment(b[1], "YYYY-MM-DDThh:mm:ss").isBefore(moment(a[1]) === true)) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+    // by day
+    events.sort(
+        function (a, b) {
+            if (a[0] < b[0]) {
+                return -1;
+            } else if (a[0] > b[0]) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        Logger.log('the array: %s', JSON.stringify(events));
 }
 //# sourceMappingURL=module.js.map
