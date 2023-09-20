@@ -34,6 +34,14 @@ class Goal {
             '"' +
             ", " +
             '"' +
+            this["objective1"] +
+            '"' +
+            ", " +
+            '"' +
+            this["objective2"] +
+            '"' +
+            ", " +
+            '"' +
             this["standard"] +
             '"' +
             ", " +
@@ -49,6 +57,12 @@ class Goal {
             '",' +
             '"gl": "' +
             this["annual"] +
+            '",' +
+            '"objective1": "' +
+            this["objective1"] +
+            '",' +
+            '"objective2": "' +
+            this["objective2"] +
             '",' +
             '"strand": "' +
             this["strand"] +
@@ -166,7 +180,7 @@ function getCurrentRecord() {
         }
     }
 }
-function getLogEntries(row) {
+function getLogEntries(row?) {
     if (row !== undefined) {
         var id = ss.getSheetByName('checklist').getRange(row, 1, 1, 1).getValue();
     }
@@ -245,6 +259,7 @@ function onEditActions(e) {
         }
         var originCell = ss.getActiveSheet().getRange(e.range.rowStart, e.range.columnStart, 1, 1);
         originCell.clear();
+        getLogEntries();
     }
 }
 function makeLogEntriesForAllSelected() {
@@ -364,7 +379,6 @@ function sortStuDataRangeByCurrentColumn() {
         return ids;
     }
 }
-
 function sortStuDataRangeByGrade() {
     var range = ss.getRangeByName('stuDataChecklist');
     range.sort({ column: 4, ascending: true });
@@ -380,6 +394,38 @@ function sortStuDataRangeByAnnual() {
 function sortStuDataRangeByTri() {
     var range = ss.getRangeByName('stuDataChecklist');
     range.sort({ column: 6, ascending: true });
+}
+function filterAttndRangeByWkDy() {
+    var filterRange = [];
+    var range = ss.getRangeByName('attend');
+    if (moment().weekday() === 1) {
+        filterRange = ["J1:J36", 10];
+    } else if (moment().weekday() === 2) {
+        filterRange = ["K1:K36", 11];
+    } else if (moment().weekday() === 3) {
+        filterRange = ["L1:L36", 12];
+    } else if (moment().weekday() === 4) {
+        filterRange = ["M1:M36", 13];
+    } else if (moment().weekday() === 5) {
+        filterRange = ["N1:N36", 14];
+    }
+    var filter = ss.getSheetByName("attnd").getRange(filterRange[0].toString()).getFilter();
+    if (filter) {
+        // Logger.log("criteria: %s", JSON.stringify(filter.getColumnFilterCriteria(11).getCriteriaType()));
+        filter.remove()
+    };
+
+    var filter = ss.getSheetByName('attnd').getRange(filterRange[0].toString()).createFilter();
+    var criteria = SpreadsheetApp.newFilterCriteria()
+        .whenNumberEqualTo(1)
+        .build();
+
+    filter.setColumnFilterCriteria(filterRange[1], criteria);
+    range.sort({ column: 16, ascending: true });
+    var sheet = ss.getSheetByName('attnd');
+    sheet.autoResizeColumns(10,5);
+    var currentWidth = sheet.getColumnWidth(filterRange[1]);
+    sheet.setColumnWidth(filterRange[1], currentWidth + 10);
 }
 function importXLS_2() {
     if (PropertiesService.getScriptProperties().getProperty("excelSource") === null) {
@@ -657,28 +703,32 @@ function setUpAttendance() {
     }
     // values should now be on the first student record
     // highlight the current day
-    var hiliteCol = dateRow.indexOf(todayDt) + 1;
+    // var hiliteCol = dateRow.indexOf(todayDt) + 1;
 
-    var theColorRange = ss.getSheetByName("attnd").getRange(1 + removed, hiliteCol, 28, 1);
-    var theColors = theColorRange.getBackgrounds();
-    Logger.log('the colors are %s', JSON.stringify(theColors));
+    // var theColorRange = ss.getSheetByName("attnd").getRange(removed, hiliteCol, 28, 1);
+    // var theColors = theColorRange.getBackgrounds();
+    // Logger.log('the colors are %s', JSON.stringify(theColors));
 
-    var assgnDays = ss.getSheetByName("attnd").getRange(1 + removed, 10, 32, 5).getValues();
+    var assgnDays = ss.getSheetByName("attnd").getRange(removed, 10, 32, 5).getValues();
+    var names = ss.getSheetByName("attnd").getRange(removed, 1, 32, 1).getValues();
+    // for (let i = 0; i < theColors.length; i++) {
+    //     var el = theColors[i];
+    //     if (assgnDays[i][todayWkDy - 1] === true) {
+    //         if (names[i][0] === "office hours" ||
+    //             names[i][0] === "collab_80" ||
+    //             names[i][0] === "lunch") { theColors.splice(i, 1, ["#ff0000"]) }
+    //         else { theColors.splice(i, 1, ["#fff2cc"]); }
+    //     }
+    //     else {
+    //         theColors.splice(i, 1, ["#B0B0B0"]);
+    //     }
+    // }
 
-    for (let i = 0; i < theColors.length; i++) {
-        var el = theColors[i];
-        if (assgnDays[i][todayWkDy - 1] === true) {
-            theColors.splice(i, 1, ["#fff2cc"]);
-        }
-        else {
-            theColors.splice(i, 1, ["#B0B0B0"]);
-        }
-    }
-    Logger.log('the colors are %s', JSON.stringify(theColors));
+    // Logger.log('the colors are %s', JSON.stringify(theColors));
 
-    theColorRange.setBackgrounds(theColors);
+    // theColorRange.setBackgrounds(theColors);
 
-    var lastMonday = moment(todayDt, "MM-DD-YYYY").subtract(7, 'd').weekday(1).format("MM-DD-YYYY");
+    var lastMonday = moment(todayDt, "ddd MM-DD-YYYY").subtract(7, 'd').weekday(1).format("ddd MM-DD-YYYY");
     var lstMonCol = dateRow.indexOf(lastMonday) + 1;
     var dayOne = dateRow.indexOf("startOfDates") + 1;
 
@@ -696,20 +746,7 @@ function setUpAttendance() {
     dateGrp.collapseGroups();
     sheet.getRange(3, dateRow.indexOf(todayDt) + 1, 1, 1).activate();
 
-    // an alternative is to filter out groups that do not meet today
-    try {
-        var filter = ss.getActiveSheet().getFilter();
-    } catch (error) {
-        filter = ss.getSheetByName('attnd').getRange("A1:KW32").createFilter();
-    }
-    var criteria = SpreadsheetApp.newFilterCriteria()
-        .setHiddenValues(['0', 'FALSE'])
-        .build();
-    if (filter !== null) {
-        filter.remove();
-    } else {
-    }
-    filter.setColumnFilterCriteria(16, criteria);
+    filterAttndRangeByWkDy();
     SpreadsheetApp.flush();
 }
 
@@ -767,19 +804,19 @@ function makeSchedule() {
         var [name, seisId, Services_Codes, min_330, Freq, Grade, TeacherEM, Teacher, Group_ID, Mo, Tu, We, Th, Fr, , Begin, End] = el;
         Begin = "2023-08-14T" + Begin + "00:000Z";
         if (Mo === true) {
-            events.push([1, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+            events.push([1, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End, "hh:mm").format("YYYY-MM-DDThh:mm"), name]);
         }
         if (Tu === true) {
-            events.push([2, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+            events.push([2, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End, "hh:mm").format("YYYY-MM-DDThh:mm"), name]);
         }
         if (We === true) {
-            events.push([3, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+            events.push([3, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End, "hh:mm").format("YYYY-MM-DDThh:mm"), name]);
         }
         if (Th === true) {
-            events.push([4, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+            events.push([4, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End, "hh:mm").format("YYYY-MM-DDThh:mm"), name]);
         }
         if (Fr === true) {
-            events.push([5, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End,"hh:mm").format("YYYY-MM-DDThh:mm"), name]);
+            events.push([5, "2020-08-14T" + moment(Begin, "hh:mm").format("YYYY-MM-DDThh:mm"), moment(End, "hh:mm").format("YYYY-MM-DDThh:mm"), name]);
         }
     }
 
@@ -805,6 +842,6 @@ function makeSchedule() {
                 return 0;
             }
         });
-        Logger.log('the array: %s', JSON.stringify(events));
+    Logger.log('the array: %s', JSON.stringify(events));
 }
 //# sourceMappingURL=module.js.map
