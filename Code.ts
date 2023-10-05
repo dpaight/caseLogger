@@ -103,16 +103,138 @@ class Goal {
         "<li data-saved='" + this.snip() + "'>" + this["area"] + "</li>";
     }
 }
+class Stu {
+    constructor(array) {
+        this["SEIS_ID"] = array[0];
+        this["Last_Name_First_Name"] = array[1];
+        this["Date_of_Birth"] = array[2];
+        this["Grade_Code"] = array[3];
+        this["Parent_Guardian_1_Name"] = array[4];
+        this["Parent_1_Email"] = array[5];
+        this["Parent_1_Home_Phone"] = array[6];
+        this["Disability_1_Code"] = array[7];
+        this["Disability_2_Code"] = array[8];
+        this["Parent/Guardian_1_Name"] = array[9];
+        this["Parent_1_Home_Phone"] = array[10];
+        this["Parent_1_Email"] = array[11];
+        this["Date_of_Next_Annual_Plan_Review"] = array[12];
+        this["Date_of_Next_Eligibility_Evaluation"] = array[13];
+    }
+    list() {
+        var item = '<li class="stuData" stuId="' +
+            this['SEIS_ID'] +
+            '">' +
+            '["' +
+            this[""] +
+            '"' +
+            ", " +
+            '"' +
+            this[""] +
+            '"' +
+            ", " +
+            '"' +
+            this[""] +
+            '"' +
+            ", " +
+            '"' +
+            this[""] +
+            '"' +
+            ", " +
+            '"' +
+            this[""] +
+            '"' +
+            ", " +
+            '"' +
+            this[""] +
+            '"' +
+            ", " +
+            '"' +
+            this[""] +
+            '"]</li>';
+        return item;
+    }
+    snip() {
+        var snip = "[" +
+            '"SEIS_ID": "' +
+            this["SEIS_ID"] +
+            '",' +
+            '"Last_Name_First_Name": "' +
+            this["Last_Name_First_Name"] +
+            '",' +
+            '"Date_of_Birth": "' +
+            this["Date_of_Birth"] +
+            '",' +
+            '"Grade_Code": "' +
+            this["Grade_Code"] +
+            '",' +
+            '"Parent_Guardian_1_Name": "' +
+            this["Parent_Guardian_1_Name"] +
+            '",' +
+            '"Parent_1_Email": "' +
+            this["Parent_1_Email"] +
+            '"' +
+            '"Parent_1_Home_Phone": "' +
+            this["Parent_1_Home_Phone"] +
+            '"Disability_1_Code": "' +
+            this["Disability_1_Code"] +
+            '"Disability_2_Code": "' +
+            this["Disability_2_Code"] +
+            '"Parent": "' +
+            this["Parent/Guardian_1_Name"] +
+            '"Parent_1_Home_Phone": "' +
+            this["Parent_1_Home_Phone"] +
+            '"Parent_1_Email": "' +
+            this["Parent_1_Email"] +
+            '"Date_of_Next_Annual_Plan_Review": "' +
+            this["Date_of_Next_Annual_Plan_Review"] +
+            '"Date_of_Next_Eligibility_Evaluation": "' +
+            this["Date_of_Next_Eligibility_Evaluation"] +
+            '"' +
+            "]";
+        return snip;
+    }
+    checkboxItem(checked) {
+        var me = this["id"];
+        if (checked === true) {
+            var chkd = "checked";
+        }
+        else {
+            chkd = "";
+        }
+        console.log("i am %s", me);
+        return ("<div class='input-group-prepend'>" +
+            "<div  class='input-group-text'>" +
+            "<input type='checkbox' class='glChkBx' " +
+            chkd +
+            " data-obj=" +
+            me +
+            ">" +
+            "<textarea  class='form-control goalList' style='margin-bottom: 5px; height:fit-content; width: 700px;' data-obj=" +
+            me +
+            " readonly >" +
+            "(" +
+            this["standard"] +
+            ") " +
+            this["annual"]);
+        ("</textarea>");
+        "</div>" + "</div>";
+    }
+    saved() {
+        "<li data-saved='" + this.snip() + "'>" + this["area"] + "</li>";
+    }
+}
 function onLoad() {
     SpreadsheetApp.getUi() // Or DocumentApp or SlidesApp or FormApp.
         .createMenu('Functions')
         .addItem('Open sidebar', 'openSidebar')
         .addItem('Import Aeries XLSX files', 'importXLS_2')
         .addItem('Import new SEIS data', 'getSeisCSV')
+        .addItem('get Stu snip', 'getStuSnip')
         .addItem('get log entries for this student', 'getLogEntries')
         .addSeparator()
         .addItem('New log entries for all selected', 'makeLogEntriesForAllSelected')
         .addToUi();
+
     setUpAttendance();
     checkFolderIdProperties();
 }
@@ -228,38 +350,39 @@ function onEditActions(e) {
         snipCol.clear();
         snipDest.setValues(snippets);
         return;
-    }
-    // end of goal filter action
-    // now checking for log entry action(s)
-    if (!e.value || e.range.columnStart !== headings.indexOf("Add as Log Entry") + 1) {
-        Logger.log('invalid location or entry');
-        return;
-    }
-    else {
-        Logger.log(JSON.stringify(e));
-        // the event object: {"authMode":"FULL","oldValue":"oh timmy!","range":{"columnEnd":11,"columnStart":11,"rowEnd":22,"rowStart":22},"source":{},"triggerUid":"16780406","user":{"email":"paight@gmail.com","nickname":"paight"},"value":"oh timmy! timmy!"}
-        var row = e.range.rowStart;
-        var seisId = ss.getActiveSheet().getRange(row, 1, 1, 1).getValue();
-        var contents = e.value;
-        var dataRow = createLogEntryRecord(seisId, contents, 0);
-        sheet = ss.getSheetByName('logRespMerged');
-        var last = sheet.getRange('A1:A').getValues().filter(String).length;
-        var dest = sheet.getRange(last + 1, 1, 1, dataRow.length);
-        try {
-            dest.setValues([dataRow]);
-            var newNone = dataRow[5];
-            var dest2 = ss.getRangeByName("TargetID");
-            dest2.setValue("");
-            SpreadsheetApp.flush();
-            dest2.setValue(newNone);
-        }
-        catch (error) {
-            SpreadsheetApp.getUi().alert("that didn't work" + error);
+    } else if (sheet.getName() === "checklist") {
+        // end of goal filter action
+        // now checking for log entry action(s)
+        if (!e.value || e.range.columnStart !== headings.indexOf("Add as Log Entry") + 1) {
+            Logger.log('invalid location or entry');
             return;
         }
-        var originCell = ss.getActiveSheet().getRange(e.range.rowStart, e.range.columnStart, 1, 1);
-        originCell.clear();
-        getLogEntries();
+        else {
+            Logger.log(JSON.stringify(e));
+            // the event object: {"authMode":"FULL","oldValue":"oh timmy!","range":{"columnEnd":11,"columnStart":11,"rowEnd":22,"rowStart":22},"source":{},"triggerUid":"16780406","user":{"email":"paight@gmail.com","nickname":"paight"},"value":"oh timmy! timmy!"}
+            var row = e.range.rowStart;
+            var seisId = ss.getActiveSheet().getRange(row, 1, 1, 1).getValue();
+            var contents = e.value;
+            var dataRow = createLogEntryRecord(seisId, contents, 0);
+            sheet = ss.getSheetByName('logRespMerged');
+            var last = sheet.getRange('A1:A').getValues().filter(String).length;
+            var dest = sheet.getRange(last + 1, 1, 1, dataRow.length);
+            try {
+                dest.setValues([dataRow]);
+                var newNone = dataRow[5];
+                var dest2 = ss.getRangeByName("TargetID");
+                dest2.setValue("");
+                SpreadsheetApp.flush();
+                dest2.setValue(newNone);
+            }
+            catch (error) {
+                SpreadsheetApp.getUi().alert("that didn't work" + error);
+                return;
+            }
+            var originCell = ss.getActiveSheet().getRange(e.range.rowStart, e.range.columnStart, 1, 1);
+            originCell.clear();
+            getLogEntries();
+        }
     }
 }
 function makeLogEntriesForAllSelected() {
@@ -293,6 +416,21 @@ function createLogEntryRecord(seisId, contents, i) {
     var dataRow = [logDate.toLocaleString(), "dpaight@hemetusd.org", "", contents, newId, seisId];
     Logger.log(JSON.stringify(dataRow));
     return dataRow;
+}
+function getStuSnip() {
+    var sheet = ss.getSheetByName("checklist");
+    var seisId = ss.getCurrentCell().getValue();
+    var last = sheet.getRange("A1:A").getValues().filter(String).length;
+    var range = sheet.getRange(2, 1, last - 1, 16);
+    var values = range.getValues();
+    for (var i = 0; i < values.length; i++) {
+        var el = values[i];
+        if (el[0] == seisId) {
+            var stuInfo = new Stu(el[0]).snip();
+            var snippet = ss.getSheetByName("checklist").getRange("A2");
+            snippet.setValue(stuInfo);
+        }
+    }
 }
 function getGoal(gId) {
     if (gId === void 0) {
@@ -423,7 +561,7 @@ function filterAttndRangeByWkDy() {
     filter.setColumnFilterCriteria(filterRange[1], criteria);
     range.sort({ column: 16, ascending: true });
     var sheet = ss.getSheetByName('attnd');
-    sheet.autoResizeColumns(10,5);
+    sheet.autoResizeColumns(10, 5);
     var currentWidth = sheet.getColumnWidth(filterRange[1]);
     sheet.setColumnWidth(filterRange[1], currentWidth + 10);
 }
@@ -685,8 +823,8 @@ function setUpAttendance() {
         moment().weekday();
 
     var todayDt = (moment().weekday() === 0 || moment().weekday() === 6) ?
-        moment().subtract(2, 'd').format('MM-DD-YYYY') :
-        moment().format('MM-DD-YYYY');
+        moment().subtract(2, 'd').format('ddd MM-DD-YYYY') :
+        moment().format('ddd MM-DD-YYYY');
 
     sheet = ss.getSheetByName("attnd");
     range = sheet.getDataRange();
